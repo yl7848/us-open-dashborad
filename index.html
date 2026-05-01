@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>US Open · Sponsor Analytics</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0a1628;
+    --navy2: #1a2f50;
+    --blue: #2563eb;
+    --blue-light: #dbeafe;
+    --green: #16a34a;
+    --green-light: #dcfce7;
+    --amber: #d97706;
+    --amber-light: #fef9c3;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --purple: #7c3aed;
+    --cyan: #0891b2;
+    --lime: #65a30d;
+    --text: #0a1628;
+    --text-2: #4a5e80;
+    --text-3: #8a9bbf;
+    --border: #e8edf5;
+    --surface: #f4f7fc;
+    --white: #ffffff;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #f0f4fb;
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, #0a1628 0%, #1a2f50 55%, #0f3460 100%);
+    padding: 3rem 2.5rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before, .hero::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.07;
+  }
+  .hero::before { width: 380px; height: 380px; background: #22c55e; top: -120px; right: -100px; }
+  .hero::after  { width: 200px; height: 200px; background: #3b82f6; bottom: -60px; left: 200px; }
+
+  .hero-inner { max-width: 1200px; margin: 0 auto; }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(34,197,94,0.15);
+    border: 1px solid rgba(34,197,94,0.35);
+    color: #4ade80;
+    font-size: 0.7rem; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 99px; margin-bottom: 1rem;
+  }
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    color: #f0f6ff; line-height: 1.1;
+    margin-bottom: 0.6rem;
+  }
+  .hero-sub {
+    color: #7fa8d4; font-size: 0.85rem; font-weight: 300;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .hero-meta {
+    margin-top: 1.5rem;
+    display: flex; gap: 1.5rem; flex-wrap: wrap;
+  }
+  .hero-stat { color: rgba(255,255,255,0.55); font-size: 0.78rem; }
+  .hero-stat strong { color: #f0f6ff; font-weight: 500; font-size: 1rem; display: block; }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* ── KPI ROW ── */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+  .kpi-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.2rem 1.4rem;
+    transition: box-shadow 0.2s;
+  }
+  .kpi-card:hover { box-shadow: 0 4px 20px rgba(37,99,235,0.08); }
+  .kpi-label { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-3); margin-bottom: 0.5rem; }
+  .kpi-value { font-family: 'DM Serif Display', serif; font-size: 2rem; color: var(--navy); line-height: 1; }
+  .kpi-delta { font-size: 0.75rem; font-weight: 500; margin-top: 0.3rem; }
+  .kpi-delta.up { color: #16a34a; }
+  .kpi-delta.down { color: #dc2626; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+  .tab-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; font-weight: 500;
+    padding: 0.6rem 1.1rem; border: none;
+    background: transparent; color: var(--text-3);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; transition: all 0.15s;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.25rem; color: var(--navy);
+    border-left: 3px solid var(--blue);
+    padding-left: 0.75rem; margin-bottom: 0.25rem;
+  }
+  .section-sub { font-size: 0.8rem; color: var(--text-3); margin: 0 0 1.2rem 1rem; }
+
+  /* ── CARDS / GRIDS ── */
+  .card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.5rem;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; }
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* ── FILTERS ── */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.2rem; align-items: center; }
+  .filter-label { font-size: 0.75rem; color: var(--text-3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; }
+  .pill {
+    font-size: 0.75rem; padding: 4px 12px; border-radius: 99px;
+    border: 1px solid var(--border); background: var(--white);
+    color: var(--text-2); cursor: pointer; transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .pill:hover { border-color: var(--blue); color: var(--blue); }
+  .pill.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .pill.all { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+  /* ── TABLE ── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  .data-table th {
+    background: var(--surface); color: var(--text-2);
+    font-size: 0.68rem; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.07em; padding: 0.65rem 0.9rem;
+    border-bottom: 2px solid var(--border); text-align: left;
+  }
+  .data-table td { padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--surface); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: #f8faff; }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 7px; vertical-align: middle; }
+  .chip { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 500; }
+  .chip-green { background: #dcfce7; color: #15803d; }
+  .chip-amber { background: #fef9c3; color: #854d0e; }
+  .chip-red   { background: #fee2e2; color: #991b1b; }
+
+  /* ── BAR PROGRESS ── */
+  .bar-bg { background: var(--surface); border-radius: 3px; height: 5px; width: 80px; display: inline-block; vertical-align: middle; margin-right: 6px; }
+  .bar-fill { height: 5px; border-radius: 3px; }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 0.75rem; font-size: 0.78rem; color: var(--text-2); }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center; padding: 2rem;
+    font-size: 0.75rem; color: var(--text-3);
+    border-top: 1px solid var(--border);
+    margin-top: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .kpi-row { grid-template-columns: repeat(2,1fr); }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .hero { padding: 2rem 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">US Open · Sponsorship Intelligence</div>
+    <h1>Sponsor Performance<br>Dashboard</h1>
+    <p class="hero-sub">2018 – 2023 &nbsp;·&nbsp; 7 Major Sponsors &nbsp;·&nbsp; Media Value Analytics</p>
+    <div class="hero-meta">
+      <div class="hero-stat"><strong>4.8B+</strong>Total Impressions</div>
+      <div class="hero-stat"><strong>0.76</strong>Avg Sentiment</div>
+      <div class="hero-stat"><strong>$143M+</strong>Total Media Value</div>
+      <div class="hero-stat"><strong>×182</strong>Avg ROI Multiple</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Impressions</div>
+      <div class="kpi-value">4.82B</div>
+      <div class="kpi-delta up">▲ 6 sponsors · 6 years</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg Sentiment Score</div>
+      <div class="kpi-value">0.76</div>
+      <div class="kpi-delta up">▲ Consistently positive</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Media Value</div>
+      <div class="kpi-value">$143M+</div>
+      <div class="kpi-delta up">▲ 4.2% YoY avg growth</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg ROI Multiple</div>
+      <div class="kpi-value">×182</div>
+      <div class="kpi-delta up">▲ Media value / cost</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('trends', this)">📈 Trends</button>
+    <button class="tab-btn" onclick="switchTab('comparison', this)">📊 Comparison</button>
+    <button class="tab-btn" onclick="switchTab('table', this)">📋 Leaderboard</button>
+  </div>
+
+  <!-- TAB: TRENDS -->
+  <div id="tab-trends" class="tab-panel active">
+    <div class="filters">
+      <span class="filter-label">Sponsors:</span>
+      <button class="pill all" onclick="toggleAll(this)">All</button>
+    </div>
+    <div id="sponsor-pills" class="filters" style="margin-top:-0.6rem;"></div>
+
+    <div class="card" style="margin-bottom:1.2rem;">
+      <div class="section-title">Media Value Trend</div>
+      <div class="section-sub">Annual media value by sponsor (USD million)</div>
+      <div class="legend" id="legend-line"></div>
+      <div class="chart-wrap" style="height:320px;"><canvas id="lineChart"></canvas></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="section-title">Sentiment Score</div>
+        <div class="section-sub">Yearly average per sponsor</div>
+        <div class="chart-wrap" style="height:220px;"><canvas id="sentChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Sponsorship Cost</div>
+        <div class="section-sub">Annual cost (USD million)</div>
+        <div class="chart-wrap" style="height:220px;"><canvas id="costChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: COMPARISON -->
+  <div id="tab-comparison" class="tab-panel">
+    <div class="grid-2" style="margin-bottom:1.2rem;">
+      <div class="card">
+        <div class="section-title">ROI Multiple Ranking</div>
+        <div class="section-sub">Average media value ÷ sponsorship cost</div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="roiChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Avg Impressions</div>
+        <div class="section-sub">Mean impressions across 2018–2023</div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="impChart"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Sentiment vs Media Value</div>
+      <div class="section-sub">Bubble size = avg impressions</div>
+      <div class="chart-wrap" style="height:300px;"><canvas id="bubbleChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TAB: LEADERBOARD -->
+  <div id="tab-table" class="tab-panel">
+    <div class="card">
+      <div class="section-title">Overall Leaderboard</div>
+      <div class="section-sub">Ranked by ROI multiple · averages over 2018–2023</div>
+      <table class="data-table" id="leaderboard"></table>
+    </div>
+  </div>
+
+</div>
+
+<footer>IBM Hackathon · Team SNO · 2024 &nbsp;·&nbsp; US Open Sponsorship Analytics</footer>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+const RAW = [
+  {s:'Rolex',y:2018,cost:10.96,imp:117892678,eng:2136259,tv:6091961,soc:58712,sent:0.86,media:2596.27},
+  {s:'Rolex',y:2019,cost:10.22,imp:157245892,eng:4976652,tv:6910606,soc:82327,sent:0.66,media:2529.28},
+  {s:'Rolex',y:2020,cost:11.54,imp:103792121,eng:2826992,tv:6648662,soc:104374,sent:0.71,media:1984.65},
+  {s:'Rolex',y:2021,cost:12.07,imp:134230764,eng:3603866,tv:6431593,soc:170455,sent:0.65,media:1516.95},
+  {s:'Rolex',y:2022,cost:14.68,imp:176390024,eng:3720466,tv:7444386,soc:199917,sent:0.73,media:2194.43},
+  {s:'Rolex',y:2023,cost:12.44,imp:181828562,eng:3668500,tv:12276390,soc:123248,sent:0.76,media:3806.44},
+  {s:'IBM',y:2018,cost:8.77,imp:145159915,eng:4775259,tv:9185299,soc:188281,sent:0.63,media:2020.58},
+  {s:'IBM',y:2019,cost:8.13,imp:104355619,eng:2131670,tv:11149622,soc:106852,sent:0.68,media:2176.22},
+  {s:'IBM',y:2020,cost:9.43,imp:81592412,eng:2834335,tv:11176697,soc:85720,sent:0.60,media:2146.63},
+  {s:'IBM',y:2021,cost:10.29,imp:157518913,eng:2596052,tv:8981289,soc:80588,sent:0.86,media:3538.81},
+  {s:'IBM',y:2022,cost:8.88,imp:112543043,eng:2420088,tv:11989005,soc:172747,sent:0.87,media:2188.32},
+  {s:'IBM',y:2023,cost:10.12,imp:154404834,eng:4049350,tv:12267134,soc:146389,sent:0.76,media:2864.34},
+  {s:'Emirates',y:2018,cost:5.37,imp:120912832,eng:2573885,tv:8559994,soc:186134,sent:0.67,media:2201.54},
+  {s:'Emirates',y:2019,cost:6.19,imp:81320222,eng:1691056,tv:6543927,soc:202295,sent:0.84,media:1843.37},
+  {s:'Emirates',y:2020,cost:7.84,imp:97422072,eng:3200430,tv:10066660,soc:196295,sent:0.87,media:1593.83},
+  {s:'Emirates',y:2021,cost:6.43,imp:115263392,eng:3614694,tv:12199374,soc:56479,sent:0.75,media:2114.88},
+  {s:'Emirates',y:2022,cost:6.58,imp:112959620,eng:3824608,tv:8456519,soc:148834,sent:0.81,media:1951.11},
+  {s:'Emirates',y:2023,cost:9.71,imp:125563708,eng:3132182,tv:9898477,soc:129162,sent:0.61,media:2786.42},
+  {s:'Mercedes-Benz',y:2018,cost:11.59,imp:142661270,eng:2823443,tv:6014264,soc:123417,sent:0.90,media:2117.25},
+  {s:'Mercedes-Benz',y:2019,cost:13.32,imp:94672706,eng:2798934,tv:8056270,soc:154059,sent:0.79,media:1961.19},
+  {s:'Mercedes-Benz',y:2020,cost:13.53,imp:102265883,eng:1915477,tv:5650273,soc:148203,sent:0.80,media:1056.59},
+  {s:'Mercedes-Benz',y:2021,cost:13.49,imp:141900706,eng:2623364,tv:11477440,soc:126027,sent:0.88,media:1809.29},
+  {s:'Mercedes-Benz',y:2022,cost:13.52,imp:171073587,eng:5567895,tv:8086494,soc:177040,sent:0.85,media:3610.34},
+  {s:'Mercedes-Benz',y:2023,cost:14.91,imp:99320578,eng:3272048,tv:14495015,soc:185905,sent:0.70,media:1686.88},
+  {s:'American Express',y:2018,cost:15.49,imp:132390043,eng:3685822,tv:5588979,soc:74244,sent:0.87,media:2929.60},
+  {s:'American Express',y:2019,cost:14.36,imp:126829144,eng:1915276,tv:6312242,soc:136340,sent:0.81,media:2922.05},
+  {s:'American Express',y:2020,cost:16.35,imp:96314269,eng:2071526,tv:11068291,soc:159598,sent:0.85,media:2229.89},
+  {s:'American Express',y:2021,cost:16.48,imp:116839771,eng:2372320,tv:7883466,soc:230291,sent:0.72,media:3252.93},
+  {s:'American Express',y:2022,cost:18.92,imp:137347963,eng:3644950,tv:10527663,soc:98808,sent:0.82,media:2144.75},
+  {s:'American Express',y:2023,cost:17.30,imp:97305844,eng:3289829,tv:13500112,soc:216452,sent:0.71,media:1003.14},
+  {s:'JPMorgan',y:2018,cost:18.07,imp:147089598,eng:4715720,tv:7061142,soc:107764,sent:0.86,media:2403.21},
+  {s:'JPMorgan',y:2019,cost:17.91,imp:150467063,eng:4351597,tv:9336331,soc:67061,sent:0.78,media:4484.08},
+  {s:'JPMorgan',y:2020,cost:18.44,imp:150565072,eng:4489153,tv:10610247,soc:166871,sent:0.71,media:2389.74},
+  {s:'JPMorgan',y:2021,cost:21.38,imp:168828294,eng:5616041,tv:10393117,soc:151701,sent:0.84,media:3882.93},
+  {s:'JPMorgan',y:2022,cost:22.19,imp:177968083,eng:3872568,tv:9615642,soc:80787,sent:0.77,media:1907.61},
+  {s:'JPMorgan',y:2023,cost:21.79,imp:117678021,eng:3155732,tv:6602376,soc:70414,sent:0.85,media:2024.51},
+  {s:'Heineken',y:2018,cost:8.06,imp:87265682,eng:2396124,tv:5597432,soc:57752,sent:0.76,media:1816.23},
+  {s:'Heineken',y:2019,cost:8.44,imp:157229365,eng:3981991,tv:7709925,soc:179751,sent:0.68,media:2952.68},
+  {s:'Heineken',y:2020,cost:7.09,imp:156985987,eng:4979533,tv:10541579,soc:118897,sent:0.65,media:2061.03},
+  {s:'Heineken',y:2021,cost:8.58,imp:143386185,eng:4044056,tv:7847131,soc:217873,sent:0.82,media:3023.60},
+  {s:'Heineken',y:2022,cost:9.19,imp:111585462,eng:2468209,tv:12802260,soc:64799,sent:0.63,media:1218.52},
+  {s:'Heineken',y:2023,cost:9.44,imp:146522459,eng:3587379,tv:6595449,soc:143563,sent:0.74,media:1972.78},
+];
+
+const SPONSORS = ['Rolex','IBM','Emirates','Mercedes-Benz','American Express','JPMorgan','Heineken'];
+const YEARS = [2018,2019,2020,2021,2022,2023];
+const PALETTE = {
+  'Rolex':'#2563eb','IBM':'#16a34a','Emirates':'#d97706',
+  'Mercedes-Benz':'#7c3aed','American Express':'#dc2626',
+  'JPMorgan':'#0891b2','Heineken':'#65a30d'
+};
+
+let activeSponsors = new Set(SPONSORS);
+let charts = {};
+
+function avg(arr, key) { return arr.reduce((s,d)=>s+d[key],0)/arr.length; }
+
+function getAgg() {
+  return SPONSORS.map(s => {
+    const rows = RAW.filter(d=>d.s===s);
+    return {
+      s,
+      cost: avg(rows,'cost'), media: avg(rows,'media'),
+      sent: avg(rows,'sent'), imp: avg(rows,'imp'),
+      eng: avg(rows,'eng'), tv: avg(rows,'tv'), soc: avg(rows,'soc'),
+      roi: avg(rows,'media')/avg(rows,'cost')/1000
+    };
+  });
+}
+
+// ── TABS ──
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── PILLS ──
+function buildPills() {
+  const c = document.getElementById('sponsor-pills');
+  SPONSORS.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'pill active'; b.textContent = s; b.dataset.s = s;
+    b.style.borderColor = PALETTE[s];
+    b.addEventListener('click', () => {
+      if(activeSponsors.has(s)) { if(activeSponsors.size>1) activeSponsors.delete(s); }
+      else activeSponsors.add(s);
+      document.querySelectorAll('#sponsor-pills .pill').forEach(x=>{
+        const active = activeSponsors.has(x.dataset.s);
+        x.classList.toggle('active', active);
+        x.style.background = active ? PALETTE[x.dataset.s] : '';
+        x.style.borderColor = PALETTE[x.dataset.s];
+        x.style.color = active ? '#fff' : PALETTE[x.dataset.s];
+      });
+      updateCharts();
+    });
+    b.style.background = PALETTE[s]; b.style.color='#fff';
+    c.appendChild(b);
+  });
+}
+
+function buildLegend() {
+  const l = document.getElementById('legend-line');
+  SPONSORS.forEach(s=>{
+    const el = document.createElement('span');
+    el.className='legend-item';
+    el.innerHTML=`<span class="legend-swatch" style="background:${PALETTE[s]}"></span>${s}`;
+    l.appendChild(el);
+  });
+}
+
+// ── CHARTS ──
+function makeLineChart() {
+  const ctx = document.getElementById('lineChart').getContext('2d');
+  charts.line = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: YEARS,
+      datasets: SPONSORS.map(s=>({
+        label:s,
+        data: YEARS.map(y=>{ const r=RAW.find(d=>d.s===s&&d.y===y); return r?Math.round(r.media):null; }),
+        borderColor: PALETTE[s], backgroundColor: PALETTE[s]+'22',
+        tension:0.35, pointRadius:5, borderWidth:2.5, fill:false,
+        pointHoverRadius:7, pointBackgroundColor:'#fff', pointBorderWidth:2
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        y:{ ticks:{callback:v=>'$'+v}, grid:{color:'#f0f4fa'} },
+        x:{ grid:{display:false} }
+      },
+      interaction:{ mode:'index', intersect:false }
+    }
+  });
+}
+
+function makeSentChart() {
+  const ctx = document.getElementById('sentChart').getContext('2d');
+  charts.sent = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: YEARS,
+      datasets: SPONSORS.map(s=>({
+        label:s,
+        data: YEARS.map(y=>{ const r=RAW.find(d=>d.s===s&&d.y===y); return r?r.sent.toFixed(2):null; }),
+        borderColor: PALETTE[s], tension:0.3, pointRadius:4, borderWidth:2, fill:false
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        y:{ min:0.5, max:1.0, grid:{color:'#f0f4fa'} },
+        x:{ grid:{display:false} }
+      }
+    }
+  });
+}
+
+function makeCostChart() {
+  const ctx = document.getElementById('costChart').getContext('2d');
+  charts.cost = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: YEARS,
+      datasets: SPONSORS.map(s=>({
+        label:s,
+        data: YEARS.map(y=>{ const r=RAW.find(d=>d.s===s&&d.y===y); return r?r.cost.toFixed(1):null; }),
+        backgroundColor: PALETTE[s]+'cc', borderRadius:3
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{stacked:false, grid:{display:false}},
+        y:{ ticks:{callback:v=>'$'+v+'M'}, grid:{color:'#f0f4fa'} }
+      }
+    }
+  });
+}
+
+function makeRoiChart() {
+  const agg = getAgg().sort((a,b)=>b.roi-a.roi);
+  const ctx = document.getElementById('roiChart').getContext('2d');
+  charts.roi = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: agg.map(d=>d.s),
+      datasets:[{
+        data: agg.map(d=>Math.round(d.roi)),
+        backgroundColor: agg.map(d=>PALETTE[d.s]+'cc'),
+        borderRadius:5
+      }]
+    },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>'×'+ctx.parsed.x}} },
+      scales:{
+        x:{ grid:{color:'#f0f4fa'}, ticks:{callback:v=>'×'+v} },
+        y:{ grid:{display:false} }
+      }
+    }
+  });
+}
+
+function makeImpChart() {
+  const agg = getAgg().sort((a,b)=>b.imp-a.imp);
+  const ctx = document.getElementById('impChart').getContext('2d');
+  charts.imp = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: agg.map(d=>d.s),
+      datasets:[{
+        data: agg.map(d=>Math.round(d.imp/1e6)),
+        backgroundColor: agg.map(d=>PALETTE[d.s]+'cc'),
+        borderRadius:5
+      }]
+    },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.parsed.x+'M'}} },
+      scales:{
+        x:{ grid:{color:'#f0f4fa'}, ticks:{callback:v=>v+'M'} },
+        y:{ grid:{display:false} }
+      }
+    }
+  });
+}
+
+function makeBubbleChart() {
+  const agg = getAgg();
+  const maxImp = Math.max(...agg.map(d=>d.imp));
+  const ctx = document.getElementById('bubbleChart').getContext('2d');
+  charts.bubble = new Chart(ctx, {
+    type:'bubble',
+    data:{
+      datasets: agg.map(d=>({
+        label:d.s,
+        data:[{ x:+d.sent.toFixed(2), y:Math.round(d.media), r: Math.round(8+(d.imp/maxImp)*28) }],
+        backgroundColor: PALETTE[d.s]+'88',
+        borderColor: PALETTE[d.s],
+        borderWidth:2
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:'bottom', labels:{font:{size:11}}} },
+      scales:{
+        x:{ title:{display:true,text:'Avg Sentiment Score'}, min:0.6, max:0.95, grid:{color:'#f0f4fa'} },
+        y:{ title:{display:true,text:'Avg Media Value ($M)'}, grid:{color:'#f0f4fa'} }
+      }
+    }
+  });
+}
+
+function buildLeaderboard() {
+  const agg = getAgg().sort((a,b)=>b.roi-a.roi);
+  const maxMedia = Math.max(...agg.map(d=>d.media));
+  let html = `<thead><tr>
+    <th>Sponsor</th><th>Avg Cost</th><th>Avg Media Value</th><th>ROI</th><th>Sentiment</th><th>Avg Impressions</th>
+  </tr></thead><tbody>`;
+  agg.forEach(r=>{
+    const roiClass = r.roi>=200?'chip-green':r.roi>=150?'chip-amber':'chip-red';
+    const roiLabel = r.roi>=200?'Excellent':r.roi>=150?'Good':'Low';
+    const barW = Math.round(r.media/maxMedia*100);
+    html += `<tr>
+      <td><span class="dot" style="background:${PALETTE[r.s]}"></span><b>${r.s}</b></td>
+      <td>$${r.cost.toFixed(1)}M</td>
+      <td>
+        <span class="bar-bg"><span class="bar-fill" style="width:${barW}%;background:${PALETTE[r.s]};display:block;"></span></span>
+        $${Math.round(r.media)}M
+      </td>
+      <td><span class="chip ${roiClass}">×${Math.round(r.roi)} ${roiLabel}</span></td>
+      <td>${r.sent.toFixed(2)}</td>
+      <td>${(r.imp/1e6).toFixed(1)}M</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('leaderboard').innerHTML = html;
+}
+
+function updateCharts() {
+  const active = [...activeSponsors];
+  if(charts.line) {
+    charts.line.data.datasets.forEach(ds=>{
+      ds.hidden = !active.includes(ds.label);
+    });
+    charts.line.update();
+  }
+  if(charts.sent) {
+    charts.sent.data.datasets.forEach(ds=>{ ds.hidden = !active.includes(ds.label); });
+    charts.sent.update();
+  }
+  if(charts.cost) {
+    charts.cost.data.datasets.forEach(ds=>{ ds.hidden = !active.includes(ds.label); });
+    charts.cost.update();
+  }
+}
+
+function toggleAll(btn) {
+  if(activeSponsors.size === SPONSORS.length) {
+    activeSponsors = new Set([SPONSORS[0]]);
+  } else {
+    activeSponsors = new Set(SPONSORS);
+  }
+  document.querySelectorAll('#sponsor-pills .pill').forEach(x=>{
+    const active = activeSponsors.has(x.dataset.s);
+    x.classList.toggle('active', active);
+    x.style.background = active ? PALETTE[x.dataset.s] : '';
+    x.style.borderColor = PALETTE[x.dataset.s];
+    x.style.color = active ? '#fff' : PALETTE[x.dataset.s];
+  });
+  updateCharts();
+}
+
+// ── INIT ──
+window.addEventListener('load', ()=>{
+  buildPills();
+  buildLegend();
+  makeLineChart();
+  makeSentChart();
+  makeCostChart();
+  makeRoiChart();
+  makeImpChart();
+  makeBubbleChart();
+  buildLeaderboard();
+});
+</script>
+</body>
+</html>
